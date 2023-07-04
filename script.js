@@ -1,167 +1,116 @@
-// import './style.css'
-import * as THREE from "https://cdn.skypack.dev/three@0.132.2";
+import * as THREE from "https://cdn.skypack.dev/three@0.136.0";
+import {OrbitControls} from "https://cdn.skypack.dev/three@0.136.0/examples/jsm/controls/OrbitControls";
 
-import { OrbitControls } from "https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js";
+console.clear();
 
-
-// import { Geometry, TetrahedronGeometry } from 'three'
-
-/**
- * Base
- */
-// Debug
-
-// Canvas
-const canvas = document.querySelector('canvas.webgl')
-
-// Scene
-const scene = new THREE.Scene()
-
-//galaxy
-const parameters = {}
-parameters.count = 100000;
-parameters.size = 0.01;
-parameters.radius = 2.15; 
-parameters.branches = 3; 
-parameters.spin = 3;
-parameters.randomness = 5;
-parameters.randomnessPower = 4;
-parameters.insideColor = '#ff6030';
-parameters.outsideColor = '#0949f0';
-
-let material = null; 
-let geometry = null; 
-let points = null; 
-
-const generateGalaxy = () => {
-    
-    if(points !== null){
-        geometry.dispose();
-        material.dispose();
-        scene.remove(points);
-    }
-
-    material = new THREE.PointsMaterial({
-        size: parameters.size,
-        sizeAttenuation: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        vertexColors: true
-    })
-
-    geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(parameters.count * 3);
-
-    const colors = new Float32Array(parameters.count * 3);
-    const colorInside = new THREE.Color(parameters.insideColor);
-    const colorOutside = new THREE.Color(parameters.outsideColor);
-
-
-    for(let i=0; i<parameters.count; i++){
-        const i3 = i*3;
-        const radius = Math.pow(Math.random()*parameters.randomness, Math.random()*parameters.radius);
-        const spinAngle = radius*parameters.spin;
-        const branchAngle = ((i%parameters.branches)/parameters.branches)*Math.PI*2;
-        
-
-        const negPos = [1,-1];
-        const randomX = Math.pow(Math.random(), parameters.randomnessPower)*negPos[Math.floor(Math.random() * negPos.length)];
-        const randomY = Math.pow(Math.random(), parameters.randomnessPower)*negPos[Math.floor(Math.random() * negPos.length)];
-        const randomZ = Math.pow(Math.random(), parameters.randomnessPower)*negPos[Math.floor(Math.random() * negPos.length)];
-
-        positions[i3] = Math.cos(branchAngle + spinAngle)*(radius) + randomX;
-        positions[i3+1] = randomY;
-        positions[i3+2] = Math.sin(branchAngle + spinAngle)*(radius) + randomZ;
-
-        const mixedColor = colorInside.clone();
-        mixedColor.lerp(colorOutside, Math.random()*radius/parameters.radius);
-
-        colors[i3] = mixedColor.r;
-        colors[i3+1] = mixedColor.g;
-        colors[i3+2] = mixedColor.b;
-        
-        
-    }
-    geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
-    geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
-
-    points = new THREE.Points(geometry, material);
-    scene.add(points);
-
-}
-generateGalaxy();
-
-/**
- * Test cube
- */
-
-/**
- * Sizes
- */
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
-}
-
-window.addEventListener('resize', () =>
-{
-    // Update sizes
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
-
-    // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-
-    // Update renderer
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+let scene = new THREE.Scene();
+scene.background = new THREE.Color(0x160016);
+let camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 1, 1000);
+camera.position.set(0, 4, 21);
+let renderer = new THREE.WebGLRenderer();
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+window.addEventListener("resize", event => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
 })
 
-/**
- * Camera
- */
-// Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-camera.position.x = 3
-camera.position.y = 3
-camera.position.z = 3
-scene.add(camera)
+let controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enablePan = false;
 
-// Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-
-/**
- * Renderer
- */
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
-})
-renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-
-/**
- * Animate
- */
-const clock = new THREE.Clock()
-
-const tick = () =>
-{
-    const elapsedTime = clock.getElapsedTime()
-
-    // Update controls
-    controls.update()
-
-    camera.position.x = Math.cos(elapsedTime*0.05);
-    camera.position.z = Math.sin(elapsedTime*0.05);
-    camera.lookAt(0,0,0);
-
-    // Render
-    renderer.render(scene, camera)
-
-    // Call tick again on the next frame
-    window.requestAnimationFrame(tick)
+let gu = {
+  time: {value: 0}
 }
 
-tick()
+let sizes = [];
+let shift = [];
+let pushShift = () => {
+  shift.push(
+    Math.random() * Math.PI, 
+    Math.random() * Math.PI * 2, 
+    (Math.random() * 0.9 + 0.1) * Math.PI * 0.1,
+    Math.random() * 0.9 + 0.1
+  );
+}
+let pts = new Array(50000).fill().map(p => {
+  sizes.push(Math.random() * 1.5 + 0.5);
+  pushShift();
+  return new THREE.Vector3().randomDirection().multiplyScalar(Math.random() * 0.5 + 9.5);
+})
+for(let i = 0; i < 100000; i++){
+  let r = 10, R = 40;
+  let rand = Math.pow(Math.random(), 1.5);
+  let radius = Math.sqrt(R * R * rand + (1 - rand) * r * r);
+  pts.push(new THREE.Vector3().setFromCylindricalCoords(radius, Math.random() * 2 * Math.PI, (Math.random() - 0.5) * 2 ));
+  sizes.push(Math.random() * 1.5 + 0.5);
+  pushShift();
+}
+
+let g = new THREE.BufferGeometry().setFromPoints(pts);
+g.setAttribute("sizes", new THREE.Float32BufferAttribute(sizes, 1));
+g.setAttribute("shift", new THREE.Float32BufferAttribute(shift, 4));
+let m = new THREE.PointsMaterial({
+  size: 0.125,
+  transparent: true,
+  depthTest: false,
+  blending: THREE.AdditiveBlending,
+  onBeforeCompile: shader => {
+    shader.uniforms.time = gu.time;
+    shader.vertexShader = `
+      uniform float time;
+      attribute float sizes;
+      attribute vec4 shift;
+      varying vec3 vColor;
+      ${shader.vertexShader}
+    `.replace(
+      `gl_PointSize = size;`,
+      `gl_PointSize = size * sizes;`
+    ).replace(
+      `#include <color_vertex>`,
+      `#include <color_vertex>
+        float d = length(abs(position) / vec3(40., 10., 40));
+        d = clamp(d, 0., 1.);
+        vColor = mix(vec3(227., 155., 0.), vec3(100., 50., 255.), d) / 255.;
+      `
+    ).replace(
+      `#include <begin_vertex>`,
+      `#include <begin_vertex>
+        float t = time;
+        float moveT = mod(shift.x + shift.z * t, PI2);
+        float moveS = mod(shift.y + shift.z * t, PI2);
+        transformed += vec3(cos(moveS) * sin(moveT), cos(moveT), sin(moveS) * sin(moveT)) * shift.w;
+      `
+    );
+    //console.log(shader.vertexShader);
+    shader.fragmentShader = `
+      varying vec3 vColor;
+      ${shader.fragmentShader}
+    `.replace(
+      `#include <clipping_planes_fragment>`,
+      `#include <clipping_planes_fragment>
+        float d = length(gl_PointCoord.xy - 0.5);
+        //if (d > 0.5) discard;
+      `
+    ).replace(
+      `vec4 diffuseColor = vec4( diffuse, opacity );`,
+      `vec4 diffuseColor = vec4( vColor, smoothstep(0.5, 0.1, d)/* * 0.5 + 0.5*/ );`
+    );
+    //console.log(shader.fragmentShader);
+  }
+});
+let p = new THREE.Points(g, m);
+p.rotation.order = "ZYX";
+p.rotation.z = 0.2;
+scene.add(p)
+
+let clock = new THREE.Clock();
+
+renderer.setAnimationLoop(() => {
+  controls.update();
+  let t = clock.getElapsedTime() * 0.5;
+  gu.time.value = t * Math.PI;
+  p.rotation.y = t * 0.05;
+  renderer.render(scene, camera);
+});

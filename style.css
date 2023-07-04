@@ -1,19 +1,14 @@
-*
-{
-    margin: 0;
-    padding: 0;
+@import "https://fonts.googleapis.com/css2?family=Megrim&display=swap";
+body{
+  overflow: hidden;
+  margin: 0;
 }
-
-html,
-body
-{
-    overflow: hidden;
-}
-
-.webgl
-{
-    position: fixed;
-    top: 0;
-    left: 0;
-    outline: none;
+#word{
+  font-family: Megrim, cursive;
+  font-size: 20vh;
+  position: absolute;
+  margin: 10;
+  /*bottom: 0;*/
+  color: #fc0;
+  -webkit-text-stroke: 0.15vh #c0f;
 }
